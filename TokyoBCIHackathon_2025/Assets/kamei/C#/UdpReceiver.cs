@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -14,14 +15,31 @@ public class UdpReceiver : MonoBehaviour
     public int port = 5005;
     private ConcurrentQueue<string> messageQueue = new ConcurrentQueue<string>();
     private volatile bool isRunning = false;
+    private float collectionStartTime;
+    private bool isCollecting = false;
+    private List<float[]> collectedData = new List<float[]>(); // 各行が70要素（float）のデータ
+
+    [Header("Debug View (flattened)")]
+    public float[] meanValuesFlat = new float[8 * 6];
+    public float[] varianceValuesFlat = new float[8 * 6];
+
+    [Header("EEG 平均値 [8 electrodes x 6 bands]")]
+    public float[,] meanValues = new float[8, 6];
+
+    [Header("EEG 分散値 [8 electrodes x 6 bands]")]
+    public float[,] varianceValues = new float[8, 6];
 
     // ボタンに紐づけるメソッド
     public void StartReceiving()
     {
         if (isRunning) return;
 
+        collectedData.Clear();
         udpClient = new UdpClient(port);
         isRunning = true;
+        isCollecting = true;
+        collectionStartTime = Time.time;
+
         receiveThread = new Thread(new ThreadStart(ReceiveData));
         receiveThread.IsBackground = true;
         receiveThread.Start();
@@ -40,9 +58,10 @@ public class UdpReceiver : MonoBehaviour
 
     void Update()
     {
-        while (messageQueue.TryDequeue(out string message))
+        if (isCollecting && Time.time - collectionStartTime >= 2.0f)
         {
-            Debug.Log("EEG Data (from Update): " + message);
+            isCollecting = false;
+            ProcessCollectedData();
         }
     }
 
@@ -54,30 +73,70 @@ public class UdpReceiver : MonoBehaviour
             try
             {
                 byte[] data = udpClient.Receive(ref remoteEndPoint);
-                string rawHex = BitConverter.ToString(data);
-                Debug.Log("◆ Raw Bytes: " + rawHex);
-
                 string ascii = Encoding.ASCII.GetString(data);
-                Debug.Log("◆ ASCII Decoded: " + ascii);
+                string[] stringValues = ascii.Split(',');
 
-                string[] values = ascii.Split(',');
-                if (values.Length == 70)
-                    Debug.Log("✅ EEG データ70項目を受信しました");
-                else
-                    Debug.LogWarning("⚠️ データ項目数 = " + values.Length);
+                if (stringValues.Length != 70) continue;
 
-                messageQueue.Enqueue(ascii);
+                float[] values = new float[70];
+                for (int i = 0; i < 70; i++)
+                {
+                    if (!float.TryParse(stringValues[i], out values[i]))
+                        values[i] = float.NaN;
+                }
+
+                if (isCollecting)
+                {
+                    lock (collectedData)
+                        collectedData.Add(values);
+                }
             }
-            catch (SocketException e)
+            catch { }
+        }
+    }
+
+    private void ProcessCollectedData()
+    {
+        int numSamples;
+        float[,] sum = new float[8, 6];
+        float[,] sumSq = new float[8, 6];
+
+        lock (collectedData)
+        {
+            numSamples = collectedData.Count;
+
+            foreach (var sample in collectedData)
             {
-                if (isRunning)
-                    Debug.LogError("Socket error: " + e.Message);
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogError("Receive error: " + e.Message);
+                for (int ch = 0; ch < 8; ch++)
+{
+    for (int band = 0; band < 6; band++)
+    {
+        float mean = sum[ch, band] / numSamples;
+        float var = (sumSq[ch, band] / numSamples) - (mean * mean);
+        meanValues[ch, band] = mean;
+        varianceValues[ch, band] = var;
+
+        int idx = ch * 6 + band;
+        meanValuesFlat[idx] = mean;
+        varianceValuesFlat[idx] = var;
+    }
+}
+
             }
         }
+
+        for (int ch = 0; ch < 8; ch++)
+        {
+            for (int band = 0; band < 6; band++)
+            {
+                float mean = sum[ch, band] / numSamples;
+                float var = (sumSq[ch, band] / numSamples) - (mean * mean);
+                meanValues[ch, band] = mean;
+                varianceValues[ch, band] = var;
+            }
+        }
+
+        Debug.Log("✅ 平均・分散を計算完了しました");
     }
 
     void OnApplicationQuit()
