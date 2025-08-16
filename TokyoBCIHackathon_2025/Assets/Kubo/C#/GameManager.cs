@@ -1,83 +1,95 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
-
-// 評価結果を格納するためのシンプルなクラス
-public class SwipeResult
-{
-    public string ImageName;
-    public bool Liked; // true: Like, false: UMM
-
-    public SwipeResult(string name, bool liked)
-    {
-        ImageName = name;
-        Liked = liked;
-    }
-}
+using System.Linq;
 
 public class GameManager : MonoBehaviour
 {
     [Header("カード設定")]
     [SerializeField] private List<Sprite> cardSprites;
-    [SerializeField] private CardController cardController; // 参照を1つに戻す
+    [SerializeField] private CardController cardController;
 
-    [Header("UI要素")]
+    [Header("メインUI要素")]
     [SerializeField] private Button likeButton;
     [SerializeField] private Button ummButton;
-    [SerializeField] private GameObject endPanel;
 
-    [Header("タイマー設定")]
-    [SerializeField] private float displayTime = 5.0f;
-    private float timer;
-    private bool isTimerActive = false;
+    [Header("周回後UI")]
+    [SerializeField] private GameObject roundEndPanel;
+    [SerializeField] private Button restartButton;
+    [SerializeField] private Button showResultButton;
 
-    private int currentCardIndex = 0;
+    [Header("ランキングUI")]
+    [SerializeField] private GameObject rankingPanel;
+    [SerializeField] private Text rankingText;
+    [SerializeField] private Button backButton;
 
-    // 評価結果を保存するためのリスト
-    private List<SwipeResult> swipeResults = new List<SwipeResult>();
+    private Dictionary<string, int> likeCounts = new Dictionary<string, int>();
+    private List<int> shuffledIndices = new List<int>();
+    private int currentIndexInShuffle = 0;
 
     void Start()
     {
         likeButton.onClick.AddListener(OnLikeButtonClicked);
         ummButton.onClick.AddListener(OnUmmButtonClicked);
+        restartButton.onClick.AddListener(OnRestartButtonClicked);
+        showResultButton.onClick.AddListener(OnShowResultButtonClicked);
+        backButton.onClick.AddListener(OnBackButtonClicked);
 
-        if (endPanel != null)
+        // ★ 変更点: 全ての画像のLikeカウントを0で初期化する
+        // これにより、一度もLikeされていない画像もランキングの対象になる
+        foreach (var sprite in cardSprites)
         {
-            endPanel.SetActive(false);
+            if (!likeCounts.ContainsKey(sprite.name))
+            {
+                likeCounts.Add(sprite.name, 0);
+            }
         }
 
-        // 最初のカードを表示
+        rankingPanel.SetActive(false);
+        roundEndPanel.SetActive(false);
+
+        StartNewRound();
+    }
+
+    private void StartNewRound()
+    {
+        ShuffleCards();
+        currentIndexInShuffle = 0;
+
+        cardController.gameObject.SetActive(true);
+        likeButton.gameObject.SetActive(true);
+        ummButton.gameObject.SetActive(true);
+        roundEndPanel.SetActive(false);
+        rankingPanel.SetActive(false);
+
         ShowNextCard();
     }
 
-    void Update()
+    private void ShuffleCards()
     {
-        if (isTimerActive)
+        shuffledIndices = Enumerable.Range(0, cardSprites.Count).ToList();
+        for (int i = 0; i < shuffledIndices.Count; i++)
         {
-            timer -= Time.deltaTime;
-            if (timer <= 0)
-            {
-                OnUmmButtonClicked();
-            }
+            int temp = shuffledIndices[i];
+            int randomIndex = Random.Range(i, shuffledIndices.Count);
+            shuffledIndices[i] = shuffledIndices[randomIndex];
+            shuffledIndices[randomIndex] = temp;
         }
     }
 
-    // 次のカードを表示するメソッド（シンプル版）
     public void ShowNextCard()
     {
-        if (currentCardIndex < cardSprites.Count)
+        if (currentIndexInShuffle >= shuffledIndices.Count)
         {
-            cardController.ResetCard();
-            cardController.GetComponent<Image>().sprite = cardSprites[currentCardIndex];
+            EndRound();
+            return;
+        }
 
-            SetButtonsInteractable(true);
-            timer = displayTime;
-            isTimerActive = true;
-        }
-        else
-        {
-            EndSession();
-        }
+        cardController.ResetCard();
+        int cardIndex = shuffledIndices[currentIndexInShuffle];
+        cardController.GetComponent<Image>().sprite = cardSprites[cardIndex];
+
+        SetButtonsInteractable(true);
     }
 
     private void OnLikeButtonClicked()
@@ -90,24 +102,23 @@ public class GameManager : MonoBehaviour
         HandleSwipe(Vector2.left, false);
     }
 
-    // スワイプ処理と記録をまとめたメソッド
     private void HandleSwipe(Vector2 direction, bool isLike)
     {
-        if (!isTimerActive) return;
-
-        isTimerActive = false;
         SetButtonsInteractable(false);
 
-        // ★★★ 評価結果をここで記録します ★★★
-        string imageName = cardSprites[currentCardIndex].name;
-        swipeResults.Add(new SwipeResult(imageName, isLike));
-        Debug.Log($"記録: {imageName} -> {(isLike ? "Like" : "UMM")}");
+        int cardIndex = shuffledIndices[currentIndexInShuffle];
+        string imageName = cardSprites[cardIndex].name;
 
-        // カードのスワイプを開始
+        if (isLike)
+        {
+            // ここは変更なし (初期化済みなので、キーが存在しないケースは考慮不要)
+            likeCounts[imageName]++;
+            Debug.Log($"Like Count for {imageName}: {likeCounts[imageName]}");
+        }
+
         cardController.StartSwipe(direction);
 
-        // 次のカードへインデックスを進める
-        currentCardIndex++;
+        currentIndexInShuffle++;
     }
 
     private void SetButtonsInteractable(bool interactable)
@@ -116,28 +127,56 @@ public class GameManager : MonoBehaviour
         ummButton.interactable = interactable;
     }
 
-    private void EndSession()
+    private void EndRound()
     {
         cardController.gameObject.SetActive(false);
         likeButton.gameObject.SetActive(false);
         ummButton.gameObject.SetActive(false);
 
-        if (endPanel != null)
-        {
-            endPanel.SetActive(true);
-        }
-
-        Debug.Log("全てのカードの評価が終わりました。");
-        PrintResults();
+        roundEndPanel.SetActive(true);
     }
 
-    // 最終結果をコンソールに出力する
-    private void PrintResults()
+    private void OnRestartButtonClicked()
     {
-        Debug.Log("--- 最終評価結果 ---");
-        foreach (var result in swipeResults)
+        StartNewRound();
+    }
+
+    private void OnShowResultButtonClicked()
+    {
+        CalculateAndShowRanking();
+        rankingPanel.SetActive(true);
+        roundEndPanel.SetActive(false);
+    }
+
+    private void OnBackButtonClicked()
+    {
+        rankingPanel.SetActive(false);
+        roundEndPanel.SetActive(true);
+    }
+
+    private void CalculateAndShowRanking()
+    {
+        // ★ 変更点: ロジック自体は変更不要だが、
+        // likeCountsに全画像のデータが入っているため、0点のものもソート対象になる
+        var sortedLikes = likeCounts.OrderByDescending(pair => pair.Value);
+
+        string rankingStr = "";
+        int rank = 1;
+        foreach (var pair in sortedLikes)
         {
-            Debug.Log($"{result.ImageName}: {(result.Liked ? "Like" : "UnLike")}");
+            rankingStr += $"{rank}位: {pair.Key} ({pair.Value} Likes)\n";
+            rank++;
+            if (rank > 5)
+            {
+                break;
+            }
         }
+
+        if (string.IsNullOrEmpty(rankingStr))
+        {
+            rankingStr = "画像がありません。";
+        }
+
+        rankingText.text = rankingStr;
     }
 }
