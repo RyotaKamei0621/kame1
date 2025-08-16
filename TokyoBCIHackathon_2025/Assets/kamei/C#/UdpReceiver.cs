@@ -21,6 +21,7 @@ public class UdpReceiver : MonoBehaviour
 
     [SerializeField] private GameObject canvas01;
     [SerializeField] private GameObject canvas02;
+    [SerializeField] UdpReceiver_Flash udpReceiverFlash;
 
 
     [Header("EEG 平均値 [6 bands x 8 electrodes]")]
@@ -144,8 +145,10 @@ public class UdpReceiver : MonoBehaviour
         }
 
         Debug.Log("✅ 平均・分散（band-row, electrode-column）計算完了");
-    
-    SwitchToCanvas02();
+
+        SwitchToCanvas02();
+        OnApplicationQuit();
+        udpReceiverFlash.StartReceiving();
     }
 
     private void SwitchToCanvas02()
