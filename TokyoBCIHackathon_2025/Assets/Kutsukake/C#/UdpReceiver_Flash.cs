@@ -211,7 +211,11 @@ public class UdpReceiver_Flash : MonoBehaviour
         // CSVに追記
         try
         {
-            string dir = Application.persistentDataPath;
+            // このスクリプトのあるフォルダを基準にする
+            string scriptFolder = Path.GetDirectoryName(Application.dataPath + "/Kutsukake/C#");
+            string dir = Path.Combine(scriptFolder, "CSV");
+            Directory.CreateDirectory(dir); // 無ければ作成
+
             string path = Path.Combine(dir, csvFileName);
 
             bool writeHeader = !File.Exists(path);
@@ -220,7 +224,6 @@ public class UdpReceiver_Flash : MonoBehaviour
             {
                 if (writeHeader)
                 {
-                    // ヘッダ: time_sec, mean_b0c0.., var_b0c0..
                     List<string> header = new List<string> { "time_sec", "samples_in_window" };
                     for (int b = 0; b < 6; b++)
                         for (int c = 0; c < 8; c++)
@@ -238,11 +241,12 @@ public class UdpReceiver_Flash : MonoBehaviour
                 swr.WriteLine(string.Join(",", row));
             }
 
-            Debug.Log($"✅ 直近{windowSeconds:F2}sの平均・分散をCSV追記: {Path.Combine(Application.persistentDataPath, csvFileName)}");
+            Debug.Log($"✅ CSV保存完了: {path}");
         }
         catch (Exception e)
         {
             Debug.LogError("CSV書き込みエラー: " + e.Message);
         }
+
     }
 }
