@@ -19,6 +19,10 @@ public class UdpReceiver : MonoBehaviour
     private bool isCollecting = false;
     private List<float[]> collectedData = new List<float[]>(); // 各行が70要素（float）のデータ
 
+    [SerializeField] private GameObject canvas01;
+    [SerializeField] private GameObject canvas02;
+
+
     [Header("EEG 平均値 [6 bands x 8 electrodes]")]
     public float[,] meanValues = new float[6, 8];
 
@@ -98,48 +102,57 @@ public class UdpReceiver : MonoBehaviour
 
     private void ProcessCollectedData()
     {
-    int numSamples;
-    float[,] sum = new float[6, 8];
-    float[,] sumSq = new float[6, 8];
+        int numSamples;
+        float[,] sum = new float[6, 8];
+        float[,] sumSq = new float[6, 8];
 
-    lock (collectedData)
-    {
-        numSamples = collectedData.Count;
-
-        foreach (var sample in collectedData)
+        lock (collectedData)
         {
-            for (int band = 0; band < 6; band++)
+            numSamples = collectedData.Count;
+
+            foreach (var sample in collectedData)
             {
-                for (int ch = 0; ch < 8; ch++)
+                for (int band = 0; band < 6; band++)
                 {
-                    int idx = ch + band * 8; // データインデックスは band×8 + ch
-                    float v = sample[idx];
-                    if (!float.IsNaN(v))
+                    for (int ch = 0; ch < 8; ch++)
                     {
-                        sum[band, ch] += v;
-                        sumSq[band, ch] += v * v;
+                        int idx = ch + band * 8; // データインデックスは band×8 + ch
+                        float v = sample[idx];
+                        if (!float.IsNaN(v))
+                        {
+                            sum[band, ch] += v;
+                            sumSq[band, ch] += v * v;
+                        }
                     }
                 }
             }
         }
-    }
 
-    for (int band = 0; band < 6; band++)
-    {
-        for (int ch = 0; ch < 8; ch++)
+        for (int band = 0; band < 6; band++)
         {
-            float mean = sum[band, ch] / numSamples;
-            float var = (sumSq[band, ch] / numSamples) - (mean * mean);
-            meanValues[band, ch] = mean;
-            varianceValues[band, ch] = var;
+            for (int ch = 0; ch < 8; ch++)
+            {
+                float mean = sum[band, ch] / numSamples;
+                float var = (sumSq[band, ch] / numSamples) - (mean * mean);
+                meanValues[band, ch] = mean;
+                varianceValues[band, ch] = var;
 
-            int idx = band * 8 + ch;
-            meanValuesFlat[idx] = mean;
-            varianceValuesFlat[idx] = var;
+                int idx = band * 8 + ch;
+                meanValuesFlat[idx] = mean;
+                varianceValuesFlat[idx] = var;
+            }
         }
+
+        Debug.Log("✅ 平均・分散（band-row, electrode-column）計算完了");
+    
+    SwitchToCanvas02();
     }
 
-    Debug.Log("✅ 平均・分散（band-row, electrode-column）計算完了");
+    private void SwitchToCanvas02()
+    {
+        if (canvas01 != null) canvas01.SetActive(false);
+        if (canvas02 != null) canvas02.SetActive(true);
+        Debug.Log("🖼️ CanvasをCanvas02に切り替えました");
     }
 
 
