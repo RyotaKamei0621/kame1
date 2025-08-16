@@ -11,7 +11,6 @@ using Application = UnityEngine.Application;
 
 using System.IO;         // CSV書き込み
 using UnityEngine;
-using static System.Net.Mime.MediaTypeNames;
 
 public class UdpReceiver_Flash : MonoBehaviour
 {
