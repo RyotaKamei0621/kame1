@@ -15,7 +15,7 @@ public class UdpReceiver_Matrix : MonoBehaviour
     private volatile bool isRunning = false;
 
     // ▼ Inspectorで確認できる最新データ (6×8)
-    [SerializeField] private float[,] latestMatrix = new float[6, 8];
+    public float[,] latestMatrix = new float[6, 8];
 
     // 受信スレッドとメインスレッドで共有する安全なキュー
     private ConcurrentQueue<float[,]> matrixQueue = new ConcurrentQueue<float[,]>();
