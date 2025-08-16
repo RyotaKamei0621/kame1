@@ -2,32 +2,45 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
 
+// 評価結果を格納するためのシンプルなクラス
+public class SwipeResult
+{
+    public string ImageName;
+    public bool Liked; // true: Like, false: UMM
+
+    public SwipeResult(string name, bool liked)
+    {
+        ImageName = name;
+        Liked = liked;
+    }
+}
+
 public class GameManager : MonoBehaviour
 {
     [Header("カード設定")]
-    [SerializeField] private List<Sprite> cardSprites; // 評価する画像のリスト
-    [SerializeField] private CardController cardController; // シーン上のカードへの参照
+    [SerializeField] private List<Sprite> cardSprites;
+    [SerializeField] private CardController cardController; // 参照を1つに戻す
 
     [Header("UI要素")]
     [SerializeField] private Button likeButton;
     [SerializeField] private Button ummButton;
-    [SerializeField] private GameObject endPanel; // 終了時に表示するパネル
+    [SerializeField] private GameObject endPanel;
 
     [Header("タイマー設定")]
-    [Tooltip("カードの表示時間（秒）")]
     [SerializeField] private float displayTime = 5.0f;
     private float timer;
     private bool isTimerActive = false;
 
     private int currentCardIndex = 0;
 
+    // 評価結果を保存するためのリスト
+    private List<SwipeResult> swipeResults = new List<SwipeResult>();
+
     void Start()
     {
-        // ボタンが押されたら、それぞれのメソッドを呼び出すように設定
         likeButton.onClick.AddListener(OnLikeButtonClicked);
         ummButton.onClick.AddListener(OnUmmButtonClicked);
 
-        // 終了パネルは非表示に
         if (endPanel != null)
         {
             endPanel.SetActive(false);
@@ -39,64 +52,61 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        // タイマーが有効な場合のみ時間をカウントダウン
         if (isTimerActive)
         {
             timer -= Time.deltaTime;
             if (timer <= 0)
             {
-                // 時間切れの場合は自動的にUMM
-                isTimerActive = false; // タイマーを止める
                 OnUmmButtonClicked();
             }
         }
     }
 
+    // 次のカードを表示するメソッド（シンプル版）
     public void ShowNextCard()
     {
         if (currentCardIndex < cardSprites.Count)
         {
-            // カードをリセットして新しい画像を設定
             cardController.ResetCard();
             cardController.GetComponent<Image>().sprite = cardSprites[currentCardIndex];
 
-            // ボタンを押せるようにする
             SetButtonsInteractable(true);
-
-            // タイマーをリセットして起動
             timer = displayTime;
             isTimerActive = true;
         }
         else
         {
-            // 全てのカードが終わった
             EndSession();
         }
     }
 
     private void OnLikeButtonClicked()
     {
-        HandleButtonAction(Vector2.right);
+        HandleSwipe(Vector2.right, true);
     }
 
     private void OnUmmButtonClicked()
     {
-        HandleButtonAction(Vector2.left);
+        HandleSwipe(Vector2.left, false);
     }
 
-    private void HandleButtonAction(Vector2 swipeDirection)
+    // スワイプ処理と記録をまとめたメソッド
+    private void HandleSwipe(Vector2 direction, bool isLike)
     {
-        if (!isTimerActive) return; // 既に処理が始まっている場合は何もしない
+        if (!isTimerActive) return;
 
-        // タイマーを止める
         isTimerActive = false;
-        // 連打を防ぐためにボタンを無効化
         SetButtonsInteractable(false);
 
-        // カードのスワイプを開始
-        cardController.StartSwipe(swipeDirection);
+        // ★★★ 評価結果をここで記録します ★★★
+        string imageName = cardSprites[currentCardIndex].name;
+        swipeResults.Add(new SwipeResult(imageName, isLike));
+        Debug.Log($"記録: {imageName} -> {(isLike ? "Like" : "UMM")}");
 
-        // 次のカードへ
+        // カードのスワイプを開始
+        cardController.StartSwipe(direction);
+
+        // 次のカードへインデックスを進める
         currentCardIndex++;
     }
 
@@ -108,16 +118,26 @@ public class GameManager : MonoBehaviour
 
     private void EndSession()
     {
-        // カードとボタンを非表示
         cardController.gameObject.SetActive(false);
         likeButton.gameObject.SetActive(false);
         ummButton.gameObject.SetActive(false);
 
-        // 終了パネルを表示
         if (endPanel != null)
         {
             endPanel.SetActive(true);
         }
+
         Debug.Log("全てのカードの評価が終わりました。");
+        PrintResults();
+    }
+
+    // 最終結果をコンソールに出力する
+    private void PrintResults()
+    {
+        Debug.Log("--- 最終評価結果 ---");
+        foreach (var result in swipeResults)
+        {
+            Debug.Log($"{result.ImageName}: {(result.Liked ? "Like" : "UnLike")}");
+        }
     }
 }
