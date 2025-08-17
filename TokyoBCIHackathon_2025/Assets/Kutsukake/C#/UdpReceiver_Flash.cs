@@ -53,8 +53,12 @@ public class UdpReceiver_Flash : MonoBehaviour
         string dir = Path.Combine(Application.persistentDataPath, "CSV");
         Directory.CreateDirectory(dir);
         string path = Path.Combine(dir, csvFileName);
-        if (File.Exists(path)) File.Delete(path);   // 起動時にクリア
+        if (File.Exists(path))
+        {
+            Debug.LogWarning("⚠ 既存のCSVファイルが見つかりました。起動時にクリアします: " + path);
+            File.Delete(path);   // 起動時にクリア
 
+        } 
         if (isRunning) return;
 
         lock (bufferLock) buffer2s.Clear();

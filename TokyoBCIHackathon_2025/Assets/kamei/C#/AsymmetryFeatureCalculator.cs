@@ -4,41 +4,52 @@ using UnityEngine;
 
 public class AsymmetryFeatureCalculator : MonoBehaviour
 {
-    [Header("Zスコアデータ")]
-    [SerializeField] private float[,] zScores; // [channel, band] → [0–7, 0–5]
-    [SerializeField] private float ch7RatioZScore; // ← 単一の値に修正
 
-    [Header("計算された特徴量 (Inspector表示)")]
-    [SerializeField] private float[] asymmetryFeatures = new float[6]; // 6バンド分
+    [Header("Zスコアの参照元")]
+    public ZScoreProcessor zScoreProcessor;
 
-    private readonly string[] bandNames = { "Delta", "Theta", "Alpha", "BetaLow", "BetaMid", "BetaHigh" };
+    [Header("出力結果: 各周波数帯における比率")]
+    [Tooltip("Delta, Theta, Alpha, BetaLow, BetaMid, BetaHigh の順")]
+    [SerializeField] public float[] results = new float[6];
 
-    public void CalculateAsymmetryFeatures()
+    [ContextMenu("計算を実行")]
+    public void ComputeLateralizationRatios()
     {
-        if (zScores == null || zScores.GetLength(0) < 8 || zScores.GetLength(1) < 6)
+        if (zScoreProcessor == null || zScoreProcessor.zScores == null || zScoreProcessor.zScores.Length != 48)
         {
-            Debug.LogError("zScoresのサイズが不正です。電極8×周波数帯6の形式にしてください。");
+            Debug.LogError("Zスコアの参照が不正です。");
             return;
         }
 
-        if (Mathf.Abs(ch7RatioZScore) < 1e-6f)
+        for (int band = 0; band < 6; band++)
         {
-            Debug.LogWarning("Ch7比 (高β/α) のZスコアが0に近いため、0.0001に補正します。");
-            ch7RatioZScore = 0.0001f;
+            int ch2 = band * 8 + 1;
+            int ch4 = band * 8 + 3;
+            int ch6 = band * 8 + 5;
+            int ch8 = band * 8 + 7;
+
+            float leftRightDiffSum = Mathf.Abs(zScoreProcessor.zScores[ch2] - zScoreProcessor.zScores[ch4])
+                                   + Mathf.Abs(zScoreProcessor.zScores[ch6] - zScoreProcessor.zScores[ch8]);
+
+            // ch7の zスコア取得: β高 / α
+            int ch7_betaHigh = 5 * 8 + 6;  // β高のch7インデックス
+            int ch7_alpha    = 2 * 8 + 6;  // αのch7インデックス
+
+            float betaHighZ = zScoreProcessor.zScores[ch7_betaHigh];
+            float alphaZ    = zScoreProcessor.zScores[ch7_alpha];
+
+            float ratio = (Mathf.Abs(alphaZ) > 1e-6f) ? (betaHighZ / alphaZ) : 0f;
+
+            // 最終的な指標（分母が0にならないようチェック）
+            results[band] = (Mathf.Abs(ratio) > 1e-6f) ? (leftRightDiffSum / ratio) : 0f;
         }
 
-        for (int i = 0; i < 6; i++)
-        {
-            float diffLeftRight = Mathf.Abs((zScores[1, i] - zScores[3, i]) + (zScores[5, i] - zScores[7, i]));
-            asymmetryFeatures[i] = diffLeftRight * ch7RatioZScore;
-        }
-
-        Debug.Log("✅ 非対称性特徴量を更新しました。");
+        Debug.Log("✅ ラテラリゼーション指標計算完了");
     }
 
 
         public float[] GetFeatures()
         {
-            return asymmetryFeatures;
+            return results;
         }
 }

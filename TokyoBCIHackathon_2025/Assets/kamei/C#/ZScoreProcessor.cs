@@ -6,7 +6,7 @@ public class ZScoreProcessor : MonoBehaviour
 {
     [Header("参照元")]
     public UdpReceiver udpReceiver;
-
+    public AsymmetryFeatureCalculator ae;
     [Header("Zスコア（6 bands × 8 electrodes = 48）")]
     public float[] zScores = new float[6 * 8];
 
@@ -56,10 +56,14 @@ public class ZScoreProcessor : MonoBehaviour
             }
 
             Debug.Log("✅ Zスコア計算完了（横持ちCSV対応）");
+
+            ae.ComputeLateralizationRatios();
         }
         catch (Exception ex)
         {
             Debug.LogError("CSVの読み取り中にエラーが発生しました: " + ex.Message);
         }
     }
+
+  
 }
