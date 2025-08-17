@@ -204,4 +204,10 @@ public class GameManager : MonoBehaviour
 
         rankingText.text = rankingStr;
     }
+    // 履歴を外部に公開（読み取り専用）
+    public System.Collections.Generic.IReadOnlyList<SwipeRecord> GetSwipeHistory()
+    {
+        return swipeHistory.AsReadOnly();  // List→ReadOnlyCollection にして返す
+    }
+
 }
