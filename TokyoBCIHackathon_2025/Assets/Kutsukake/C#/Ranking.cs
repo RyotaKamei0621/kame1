@@ -34,6 +34,7 @@ public class Ranking : MonoBehaviour
 
     [Header("UI 設定")]
     [SerializeField] private UnityEngine.UI.Text outputText;
+    [SerializeField] private UnityEngine.UI.Text likedOnlyText;
     [SerializeField] private int maxLines = 10;
     [SerializeField] private bool showSwipeSummary = true;
 
@@ -119,6 +120,19 @@ public class Ranking : MonoBehaviour
         // sb.AppendLine();
 
         // === 履歴 ===
+        // 履歴セクションの直前あたりに追加
+        Dictionary<string, int> likeCountDict = null;
+        if (gameManager != null)
+        {
+            var hist = gameManager.GetSwipeHistory();
+            if (hist != null)
+            {
+                likeCountDict = hist
+                    .Where(h => h.Liked)
+                    .GroupBy(h => h.ImageName)
+                    .ToDictionary(g => g.Key, g => g.Count());
+            }
+        }
         sb.AppendLine($"=== History by {sortBy} (top {Mathf.Min(maxLines, resultsByCount.Count)}) ===");
         if (resultsByCount.Count > 0)
         {
@@ -136,7 +150,11 @@ public class Ranking : MonoBehaviour
 
             foreach (var x in byScore)
             {
-                sb.AppendLine($"{x.Key,4}: score={x.Score.ToString("G4", CI)}  name={x.Name}");
+                int likes = 0;
+                if (likeCountDict != null)
+                    likeCountDict.TryGetValue(x.Name, out likes);
+
+                sb.AppendLine($"{x.Key,4}: score={x.Score.ToString("G4", CI)}  name={x.Name}  Likes={likes}");
             }
         }
         else
@@ -174,6 +192,7 @@ public class Ranking : MonoBehaviour
         }
 
         outputText.text = sb.ToString();
+        UpdateLikedOnlyUI();  // ← 追加！
     }
 
     private float ComputeScore(float[] arr)
@@ -210,4 +229,55 @@ public class Ranking : MonoBehaviour
     {
         return "[" + string.Join(", ", arr.Select(v => v.ToString("G4", CI))) + "]";
     }
+    public void UpdateLikedOnlyUI()
+{
+    if (likedOnlyText == null || gameManager == null) return;
+
+    var hist = gameManager.GetSwipeHistory();
+    if (hist == null || hist.Count == 0)
+    {
+        likedOnlyText.text = "(No swipe history)";
+        return;
+    }
+
+    var likedImageNames = new HashSet<string>(
+        hist.Where(h => h.Liked).Select(h => h.ImageName)
+    );
+
+    var likedEntries = resultsByCount
+        .Where(kv => likedImageNames.Contains(kv.Value.ImageName))
+        .Select(kv => new
+        {
+            Score = ComputeScore(kv.Value.Features),
+            Name = kv.Value.ImageName
+        })
+        .GroupBy(x => x.Name)
+        .Select(g => new
+        {
+            Name = g.Key,
+            AvgScore = g.Average(x => x.Score)
+        })
+        .OrderByDescending(g => g.AvgScore)
+        .Take(10);
+
+    var sb = new StringBuilder();
+    // sb.AppendLine("=== Liked Only ===");
+
+    if (!likedEntries.Any())
+    {
+        // sb.AppendLine("(No liked entries recorded yet)");
+    }
+    else
+    {
+        foreach (var entry in likedEntries)
+        {
+            sb.AppendLine($"{entry.Name}: Avg Score = {entry.AvgScore.ToString("G4", CI)}");
+        }
+    }
+
+    likedOnlyText.text = sb.ToString();
+}
+
+
+
 }
