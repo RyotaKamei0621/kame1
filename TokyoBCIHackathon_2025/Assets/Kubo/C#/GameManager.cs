@@ -211,6 +211,10 @@ public class GameManager : MonoBehaviour
     {
         return swipeHistory.AsReadOnly();  // List��ReadOnlyCollection �ɂ��ĕԂ�
     }
+
+    // 画像リスト（Rankingの人物画像表示に使う）
+    public List<Sprite> GetAllCardSprites() => cardSprites;
+
     public string GetCurrentImageName()
     {
         if (currentIndexInShuffle >= shuffledIndices.Count)
