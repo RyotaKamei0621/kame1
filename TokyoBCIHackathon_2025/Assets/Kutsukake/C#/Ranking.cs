@@ -224,7 +224,7 @@ public class Ranking : MonoBehaviour
             if (detailTxt != null)
             {
                 int likes = 0; likeDict.TryGetValue(data.Name, out likes);
-                string likeStr = likes > 0 ? $"♥ {likes}" : "No Like";
+                string likeStr = likes > 0 ? $"♥ {likes}" : "♥ 0";
                 detailTxt.text = $"Score: {data.Score.ToString("G4", CI)}   {likeStr}";
             }
 
