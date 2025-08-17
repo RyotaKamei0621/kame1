@@ -195,4 +195,18 @@ public class Ranking : MonoBehaviour
     {
         return "[" + string.Join(", ", arr.Select(v => v.ToString("G4", CI))) + "]";
     }
+
+    //ここからかめい追加
+    // 外部からUI更新を呼び出せるようにする
+    public void RefreshRankingUI()
+    {
+        UpdateOutputUI();  // すでに定義済みのprivate関数
+    }
+
+    // 外部からText出力先を変更したい場合（共有UIに出すため）
+    public void SetOutputText(UnityEngine.UI.Text t)
+    {
+        outputText = t;
+    }
+
 }
