@@ -2,38 +2,40 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.SocialPlatforms.Impl;
 
-// š ’Ç‰Á: ƒXƒƒCƒv‚Ìî•ñ‚ğ‚Ü‚Æ‚ß‚Ä‹L˜^‚·‚é‚½‚ß‚ÌƒNƒ‰ƒX
+// ï¿½ï¿½ ï¿½Ç‰ï¿½: ï¿½Xï¿½ï¿½ï¿½Cï¿½vï¿½Ìï¿½ï¿½ï¿½ï¿½Ü‚Æ‚ß‚Ä‹Lï¿½^ï¿½ï¿½ï¿½é‚½ï¿½ß‚ÌƒNï¿½ï¿½ï¿½X
 public class SwipeRecord
 {
     public string ImageName;
     public bool Liked;
-    public int AppearanceOrder; // ‘S‘Ì‚Å‰½”Ô–Ú‚É•\¦‚³‚ê‚½‚©
+    public int AppearanceOrder; // ï¿½Sï¿½Ì‚Å‰ï¿½ï¿½Ô–Ú‚É•\ï¿½ï¿½ï¿½ï¿½ï¿½ê‚½ï¿½ï¿½
 
     public SwipeRecord(string name, bool liked, int order)
     {
         ImageName = name;
         Liked = liked;
         AppearanceOrder = order;
+        
     }
 }
 
 public class GameManager : MonoBehaviour
 {
-    [Header("ƒJ[ƒhİ’è")]
+    [Header("ï¿½Jï¿½[ï¿½hï¿½İ’ï¿½")]
     [SerializeField] private List<Sprite> cardSprites;
     [SerializeField] private CardController cardController;
 
-    [Header("ƒƒCƒ“UI—v‘f")]
+    [Header("ï¿½ï¿½ï¿½Cï¿½ï¿½UIï¿½vï¿½f")]
     [SerializeField] private Button likeButton;
     [SerializeField] private Button ummButton;
 
-    [Header("ü‰ñŒãUI")]
+    [Header("ï¿½ï¿½ï¿½ï¿½ï¿½UI")]
     [SerializeField] private GameObject roundEndPanel;
     [SerializeField] private Button restartButton;
     [SerializeField] private Button showResultButton;
 
-    [Header("ƒ‰ƒ“ƒLƒ“ƒOUI")]
+    [Header("ï¿½ï¿½ï¿½ï¿½ï¿½Lï¿½ï¿½ï¿½OUI")]
     [SerializeField] private GameObject rankingPanel;
     [SerializeField] private Text rankingText;
     [SerializeField] private Button backButton;
@@ -42,9 +44,9 @@ public class GameManager : MonoBehaviour
     private List<int> shuffledIndices = new List<int>();
     private int currentIndexInShuffle = 0;
 
-    // š ’Ç‰Á: ‘S‚Ä‚Ì•]‰¿—š—ğ‚ğ•Û‘¶‚·‚éƒŠƒXƒg
+    // ï¿½ï¿½ ï¿½Ç‰ï¿½: ï¿½Sï¿½Ä‚Ì•]ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Û‘ï¿½ï¿½ï¿½ï¿½éƒŠï¿½Xï¿½g
     private List<SwipeRecord> swipeHistory = new List<SwipeRecord>();
-    // š ’Ç‰Á: ƒ‰ƒEƒ“ƒh‚ğ‚Ü‚½‚¢‚ÅƒJƒEƒ“ƒg‚µ‘±‚¯‚éA’ÊZ‚Ì•\¦‡ƒJƒEƒ“ƒ^[
+    // ï¿½ï¿½ ï¿½Ç‰ï¿½: ï¿½ï¿½ï¿½Eï¿½ï¿½ï¿½hï¿½ï¿½ï¿½Ü‚ï¿½ï¿½ï¿½ï¿½ÅƒJï¿½Eï¿½ï¿½ï¿½gï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Aï¿½ÊZï¿½Ì•\ï¿½ï¿½ï¿½ï¿½ï¿½Jï¿½Eï¿½ï¿½ï¿½^ï¿½[
     private int overallAppearanceCount = 0;
 
 
@@ -104,7 +106,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        // š •ÏX“_: V‚µ‚¢ƒJ[ƒh‚ğ•\¦‚·‚é‘O‚ÉA’ÊZƒJƒEƒ“ƒ^[‚ğ1‘‚â‚·
+        // ï¿½ï¿½ ï¿½ÏXï¿½_: ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½Jï¿½[ï¿½hï¿½ï¿½\ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Oï¿½ÉAï¿½ÊZï¿½Jï¿½Eï¿½ï¿½ï¿½^ï¿½[ï¿½ï¿½1ï¿½ï¿½ï¿½â‚·
         overallAppearanceCount++;
 
         cardController.ResetCard();
@@ -136,12 +138,12 @@ public class GameManager : MonoBehaviour
             likeCounts[imageName]++;
         }
 
-        // š •ÏX“_: V‚µ‚¢SwipeRecord‚ğì¬‚µ‚Ä—š—ğƒŠƒXƒg‚É’Ç‰Á
+        // ï¿½ï¿½ ï¿½ÏXï¿½_: ï¿½Vï¿½ï¿½ï¿½ï¿½SwipeRecordï¿½ï¿½ï¿½ì¬ï¿½ï¿½ï¿½Ä—ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½gï¿½É’Ç‰ï¿½
         var record = new SwipeRecord(imageName, isLike, overallAppearanceCount);
         swipeHistory.Add(record);
 
-        // š •ÏX“_: ƒRƒ“ƒ\[ƒ‹‚É•\¦‚·‚é‹L˜^‚Ì“à—e‚ğ‚æ‚èÚ×‚É‚·‚é
-        Debug.Log($"‹L˜^ #{record.AppearanceOrder}: u{record.ImageName}v‚ğu{(record.Liked ? "Like" : "Unlike")}v‚µ‚Ü‚µ‚½B");
+        // ï¿½ï¿½ ï¿½ÏXï¿½_: ï¿½Rï¿½ï¿½ï¿½\ï¿½[ï¿½ï¿½ï¿½É•\ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Lï¿½^ï¿½Ì“ï¿½ï¿½eï¿½ï¿½ï¿½ï¿½ï¿½Ú×‚É‚ï¿½ï¿½ï¿½
+        Debug.Log($"ï¿½Lï¿½^ #{record.AppearanceOrder}: ï¿½u{record.ImageName}ï¿½vï¿½ï¿½ï¿½u{(record.Liked ? "Like" : "Unlike")}ï¿½vï¿½ï¿½ï¿½Ü‚ï¿½ï¿½ï¿½ï¿½B");
 
         cardController.StartSwipe(direction);
 
@@ -189,7 +191,7 @@ public class GameManager : MonoBehaviour
         int rank = 1;
         foreach (var pair in sortedLikes)
         {
-            rankingStr += $"{rank}ˆÊ: {pair.Key} ({pair.Value} Likes)\n";
+            rankingStr += $"{rank}ï¿½ï¿½: {pair.Key} ({pair.Value} Likes)\n";
             rank++;
             if (rank > 5)
             {
@@ -199,15 +201,26 @@ public class GameManager : MonoBehaviour
 
         if (string.IsNullOrEmpty(rankingStr))
         {
-            rankingStr = "‰æ‘œ‚ª‚ ‚è‚Ü‚¹‚ñB";
+            rankingStr = "ï¿½æ‘œï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü‚ï¿½ï¿½ï¿½B";
         }
 
-        rankingText.text = rankingStr;
+        // rankingText.text = rankingStr;
     }
-    // —š—ğ‚ğŠO•”‚ÉŒöŠJi“Ç‚İæ‚èê—pj
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½ÉŒï¿½ï¿½Jï¿½iï¿½Ç‚İï¿½ï¿½ï¿½pï¿½j
     public System.Collections.Generic.IReadOnlyList<SwipeRecord> GetSwipeHistory()
     {
-        return swipeHistory.AsReadOnly();  // List¨ReadOnlyCollection ‚É‚µ‚Ä•Ô‚·
+        return swipeHistory.AsReadOnly();  // Listï¿½ï¿½ReadOnlyCollection ï¿½É‚ï¿½ï¿½Ä•Ô‚ï¿½
     }
+    public string GetCurrentImageName()
+    {
+        if (currentIndexInShuffle >= shuffledIndices.Count)
+        {
+            return "(end)";
+        }
+
+        int cardIndex = shuffledIndices[currentIndexInShuffle];
+        return cardSprites[cardIndex].name;
+    }
+
 
 }

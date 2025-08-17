@@ -1,30 +1,43 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;              // LINQ
-using System.Globalization;     // CultureInfo
-using System.Text;              // StringBuilder
+using System.Linq;
+using System.Globalization;
+using System.Text;
 using UnityEngine;
-using UnityEngine.UI;           // UI.Text
+using UnityEngine.UI;
 
 public class Ranking : MonoBehaviour
 {
-    [Header("QÆ")]
+    [System.Serializable]
+    public struct ResultEntry
+    {
+        public float[] Features;
+        public string ImageName;
+
+        public ResultEntry(float[] features, string imageName)
+        {
+            Features = features;
+            ImageName = imageName;
+        }
+    }
+
+    [Header("è¨ˆç®—")]
     [SerializeField] private AsymmetryFeatureCalculator afc;
     [SerializeField] private GameManager gameManager;
 
-    [Header("ÅVŒ‹‰Ê")]
+    [Header("æœ€æ–°çµæœ")]
     [SerializeField] public float[] results = new float[6];
     [SerializeField] public int count = 0;
 
-    // count -> features ‚Ì—š—ğ
-    private readonly Dictionary<int, float[]> resultsByCount = new Dictionary<int, float[]>();
+    // count -> çµæœï¼ˆç‰¹å¾´é‡ï¼‹ç”»åƒåï¼‰
+    private readonly Dictionary<int, ResultEntry> resultsByCount = new Dictionary<int, ResultEntry>();
 
-    [Header("UI •\¦")]
-    [SerializeField] private UnityEngine.UI.Text outputText;  // Canvas ‚Ì Text ‚ğŠ„‚è“–‚Ä
-    [SerializeField] private int maxLines = 10;               // •\¦‚·‚éŒ”
+    [Header("UI è¨­å®š")]
+    [SerializeField] private UnityEngine.UI.Text outputText;
+    [SerializeField] private int maxLines = 10;
     [SerializeField] private bool showSwipeSummary = true;
 
-    [Header("ƒƒOİ’è")]
+    [Header("ãƒ­ã‚°è¨­å®š")]
     [SerializeField] private bool logResultOnCall = true;
 
     public enum SortMetric { SumAbs, Sum, Mean, Max, L2 }
@@ -37,86 +50,93 @@ public class Ranking : MonoBehaviour
         UpdateOutputUI();
     }
 
-    // ŠO•”‚âUIƒ{ƒ^ƒ“‚©‚çŒÄ‚Ô
     public void Call_result()
     {
         if (afc == null)
         {
-            Debug.LogWarning("AsymmetryFeatureCalculator ‚ª–¢Š„‚è“–‚Ä‚Å‚·B");
+            Debug.LogWarning("AsymmetryFeatureCalculator ãŒè¨­å®šã•ã‚Œã¦ã„ã¾ã›ã‚“ã€‚");
             return;
         }
 
-        count++;                                // æ“¾‡i1,2,3,...j
-        var f = afc.GetFeatures();              // 6—v‘f‚Ì“Á’¥—Ê‚ğæ“¾
+        count++;
+        var f = afc.GetFeatures();
 
-        // ƒRƒs[‚µ‚Ä•ÛiŒã‚Åã‘‚«‚³‚ê‚Ä‚à—š—ğ‚Í•s•Ï‚Éj
         var copy = new float[f.Length];
         Array.Copy(f, copy, f.Length);
+        results = copy;
 
-        results = copy;                         // ÅV‚ğ•Û
-        resultsByCount[count] = copy;           // —š—ğ“o˜^
+        string imageName = gameManager?.GetCurrentImageName() ?? "(unknown)";
+        var entry = new ResultEntry(copy, imageName);
+        resultsByCount[count] = entry;
 
         if (logResultOnCall)
         {
             string line = string.Join(", ", copy.Select(x => x.ToString("G4", CI)));
-            Debug.Log($"[Result #{count}] [{line}]");
+            Debug.Log($"[Result #{count}] name={imageName} [{line}]");
         }
 
-        UpdateOutputUI();                       // ‰æ–ÊXV
+        UpdateOutputUI();
     }
 
-    // —š—ğæ“¾i•K—v‚È‚çŠO•”‚Öj
-    public IReadOnlyDictionary<int, float[]> GetResultsHistory() => resultsByCount;
+    public IReadOnlyDictionary<int, ResultEntry> GetResultsHistory() => resultsByCount;
 
     [ContextMenu("Dump Results History")]
     private void DumpResultsHistory()
     {
         if (resultsByCount.Count == 0)
         {
-            Debug.Log("Œ‹‰Ê—š—ğ‚Í‹ó‚Å‚·B");
+            Debug.Log("çµæœå±¥æ­´ã¯ç©ºã§ã™ã€‚");
             return;
         }
         foreach (var kv in resultsByCount.OrderBy(kv => kv.Key))
         {
-            string line = string.Join(", ", kv.Value.Select(v => v.ToString("G4", CI)));
-            Debug.Log($"#{kv.Key}: [{line}]");
+            string line = string.Join(", ", kv.Value.Features.Select(v => v.ToString("G4", CI)));
+            Debug.Log($"#{kv.Key}: name={kv.Value.ImageName} [{line}]");
         }
     }
 
-    // ===== UI •`‰æ =====
     private void UpdateOutputUI()
     {
         if (outputText == null) return;
 
         var sb = new StringBuilder(1024);
 
-        // ÅVŒ‹‰Ê
-        sb.AppendLine("=== Latest Result ===");
-        if (resultsByCount.Count == 0)
-        {
-            sb.AppendLine("‚Ü‚¾Œ‹‰Ê‚ª‚ ‚è‚Ü‚¹‚ñBmCollect/Call_result ‚ğÀs‚µ‚Ä‚­‚¾‚³‚¢n");
-        }
-        else
-        {
-            int lastKey = resultsByCount.Keys.Max();
-            sb.AppendLine($"Count: {lastKey}");
-            sb.AppendLine(FormatVector("Features", resultsByCount[lastKey]));
-        }
-        sb.AppendLine();
+        // // === æœ€æ–°çµæœ ===
+        // sb.AppendLine("=== Latest Result ===");
+        // if (resultsByCount.Count == 0)
+        // {
+        //     sb.AppendLine("ã¾ã çµæœãŒã‚ã‚Šã¾ã›ã‚“ï¼ˆCall_result ã‚’å®Ÿè¡Œã—ã¦ãã ã•ã„ï¼‰");
+        // }
+        // else
+        // {
+        //     int lastKey = resultsByCount.Keys.Max();
+        //     var latest = resultsByCount[lastKey];
+        //     sb.AppendLine($"Count: {lastKey}");
+        //     sb.AppendLine($"Image: {latest.ImageName}");
+        //     sb.AppendLine(FormatVector("Features", latest.Features));
+        //     sb.AppendLine($"Score: {ComputeScore(latest.Features).ToString("G4", CI)}");
+        // }
+        // sb.AppendLine();
 
-        // —š—ğiƒXƒRƒA~‡‚ÅãˆÊ maxLines Œj
+        // === å±¥æ­´ ===
         sb.AppendLine($"=== History by {sortBy} (top {Mathf.Min(maxLines, resultsByCount.Count)}) ===");
         if (resultsByCount.Count > 0)
         {
             var byScore = resultsByCount
-                .Select(kv => new { Key = kv.Key, Values = kv.Value, Score = ComputeScore(kv.Value) })
+                .Select(kv => new
+                {
+                    Key = kv.Key,
+                    Values = kv.Value.Features,
+                    Name = kv.Value.ImageName,
+                    Score = ComputeScore(kv.Value.Features)
+                })
                 .OrderByDescending(x => x.Score)
-                .ThenBy(x => x.Key)  // “¯“_‚Ìê‡‚Í count ¸‡
+                .ThenBy(x => x.Key)
                 .Take(maxLines);
 
             foreach (var x in byScore)
             {
-                sb.AppendLine($"{x.Key,4}: score={x.Score.ToString("G4", CI)}  {FormatArray(x.Values)}");
+                sb.AppendLine($"{x.Key,4}: score={x.Score.ToString("G4", CI)}  name={x.Name}");
             }
         }
         else
@@ -124,7 +144,7 @@ public class Ranking : MonoBehaviour
             sb.AppendLine("(empty)");
         }
 
-        // ƒXƒƒCƒv—v–ñi”CˆÓj
+        // === ã‚¹ãƒ¯ã‚¤ãƒ—æƒ…å ± ===
         if (showSwipeSummary && gameManager != null)
         {
             var hist = gameManager.GetSwipeHistory();
@@ -148,7 +168,7 @@ public class Ranking : MonoBehaviour
                 foreach (var s in stats)
                 {
                     sb.AppendLine($"{s.Name}: Likes {s.Likes}, Unlikes {s.Unlikes}, First #{s.FirstShown}");
-                    if (++shown >= 10) break; // •\¦‚µ‚·‚¬–h~
+                    if (++shown >= 10) break;
                 }
             }
         }
@@ -156,7 +176,6 @@ public class Ranking : MonoBehaviour
         outputText.text = sb.ToString();
     }
 
-    // •À‚×‘Ö‚¦ƒXƒRƒA
     private float ComputeScore(float[] arr)
     {
         if (arr == null || arr.Length == 0) return 0f;
@@ -165,19 +184,15 @@ public class Ranking : MonoBehaviour
         {
             case SortMetric.Sum:
                 return arr.Sum();
-
             case SortMetric.Mean:
                 return arr.Average();
-
             case SortMetric.Max:
                 return arr.Max();
-
             case SortMetric.L2:
                 double sum2 = 0;
                 for (int i = 0; i < arr.Length; i++)
                     sum2 += (double)arr[i] * arr[i];
                 return (float)Math.Sqrt(sum2);
-
             case SortMetric.SumAbs:
             default:
                 return arr.Select(v => Mathf.Abs(v)).Sum();
