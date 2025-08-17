@@ -5,7 +5,7 @@ public class CardController : MonoBehaviour
 {
     private Vector3 initialPosition;
     private Quaternion initialRotation;
-    private GameManager gameManager; // GameManager‚Ö‚ÌQÆ
+    private GameManager gameManager; // GameManagerï¿½Ö‚ÌQï¿½ï¿½
 
     void Awake()
     {
@@ -15,7 +15,7 @@ public class CardController : MonoBehaviour
 
     void Start()
     {
-        // GameManager‚ÌƒCƒ“ƒXƒ^ƒ“ƒX‚ğ’T‚µ‚Ä•Û
+        // GameManagerï¿½ÌƒCï¿½ï¿½ï¿½Xï¿½^ï¿½ï¿½ï¿½Xï¿½ï¿½Tï¿½ï¿½ï¿½Ä•Ûï¿½
         gameManager = FindObjectOfType<GameManager>();
     }
 
@@ -28,7 +28,7 @@ public class CardController : MonoBehaviour
 
     public void StartSwipe(Vector2 direction)
     {
-        StartCoroutine(SwipeCoroutine(direction, 0.5f));
+        StartCoroutine(SwipeCoroutine(direction, 0.2f));
     }
 
     private IEnumerator SwipeCoroutine(Vector2 direction, float duration)
@@ -50,7 +50,7 @@ public class CardController : MonoBehaviour
 
         gameObject.SetActive(false);
 
-        // ššš ƒAƒjƒ[ƒVƒ‡ƒ“Š®—¹ŒãAGameManager‚ÉŸ‚ÌƒJ[ƒh‚ğ•\¦‚·‚é‚æ‚¤‚É’¼Ú“`‚¦‚é ššš
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½AGameManagerï¿½Éï¿½ï¿½ÌƒJï¿½[ï¿½hï¿½ï¿½\ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ‚¤ï¿½É’ï¿½ï¿½Ú“`ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         gameManager.ShowNextCard();
     }
 }

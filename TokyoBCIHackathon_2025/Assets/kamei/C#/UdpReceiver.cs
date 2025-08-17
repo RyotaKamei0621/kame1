@@ -64,7 +64,7 @@ public class UdpReceiver : MonoBehaviour
 
     void Update()
     {
-        if (isCollecting && Time.time - collectionStartTime >= 2.0f)
+        if (isCollecting && Time.time - collectionStartTime >= 3.0f)
         {
             isCollecting = false;
             ProcessCollectedData();
