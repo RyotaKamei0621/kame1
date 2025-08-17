@@ -1,14 +1,15 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-// ★ 追加: スワイプの情報をまとめて記録するためのクラス
+// 履歴保存用のクラス
 public class SwipeRecord
 {
     public string ImageName;
     public bool Liked;
-    public int AppearanceOrder; // 全体で何番目に表示されたか
+    public int AppearanceOrder;
 
     public SwipeRecord(string name, bool liked, int order)
     {
@@ -17,6 +18,19 @@ public class SwipeRecord
         AppearanceOrder = order;
     }
 }
+
+// ★ 変更: ランキング用のクラスを簡略化（速度関連の変数を削除）
+public class RankingData
+{
+    public string ImageName;
+    public int LikeCount = 0;
+
+    public RankingData(string name)
+    {
+        ImageName = name;
+    }
+}
+
 
 public class GameManager : MonoBehaviour
 {
@@ -35,17 +49,19 @@ public class GameManager : MonoBehaviour
 
     [Header("ランキングUI")]
     [SerializeField] private GameObject rankingPanel;
-    [SerializeField] private Text rankingText;
     [SerializeField] private Button backButton;
+    [SerializeField] private GameObject rankingEntryPrefab;
+    [SerializeField] private Transform entryContainer;
 
-    private Dictionary<string, int> likeCounts = new Dictionary<string, int>();
+    private Dictionary<string, RankingData> rankingData = new Dictionary<string, RankingData>();
     private List<int> shuffledIndices = new List<int>();
     private int currentIndexInShuffle = 0;
 
-    // ★ 追加: 全ての評価履歴を保存するリスト
     private List<SwipeRecord> swipeHistory = new List<SwipeRecord>();
-    // ★ 追加: ラウンドをまたいでカウントし続ける、通算の表示順カウンター
     private int overallAppearanceCount = 0;
+
+    // ★ 削除: 時間を記録していた変数を削除
+    // private float cardDisplayTimestamp;
 
 
     void Start()
@@ -58,9 +74,9 @@ public class GameManager : MonoBehaviour
 
         foreach (var sprite in cardSprites)
         {
-            if (!likeCounts.ContainsKey(sprite.name))
+            if (!rankingData.ContainsKey(sprite.name))
             {
-                likeCounts.Add(sprite.name, 0);
+                rankingData.Add(sprite.name, new RankingData(sprite.name));
             }
         }
 
@@ -104,8 +120,9 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        // ★ 変更点: 新しいカードを表示する前に、通算カウンターを1増やす
         overallAppearanceCount++;
+        // ★ 削除: 表示時刻の記録処理を削除
+        // cardDisplayTimestamp = Time.time;
 
         cardController.ResetCard();
         int cardIndex = shuffledIndices[currentIndexInShuffle];
@@ -131,17 +148,16 @@ public class GameManager : MonoBehaviour
         int cardIndex = shuffledIndices[currentIndexInShuffle];
         string imageName = cardSprites[cardIndex].name;
 
+        // ★ 変更: いいね数のカウント処理を簡略化
         if (isLike)
         {
-            likeCounts[imageName]++;
+            RankingData data = rankingData[imageName];
+            data.LikeCount++;
         }
 
-        // ★ 変更点: 新しいSwipeRecordを作成して履歴リストに追加
         var record = new SwipeRecord(imageName, isLike, overallAppearanceCount);
         swipeHistory.Add(record);
-
-        // ★ 変更点: コンソールに表示する記録の内容をより詳細にする
-        Debug.Log($"記録 #{record.AppearanceOrder}: 「{record.ImageName}」を「{(record.Liked ? "Like" : "Unlike")}」しました。");
+        Debug.Log($"記録 #{record.AppearanceOrder}: 「{record.ImageName}」を「{(record.Liked ? "Like" : "UMM")}」しました。");
 
         cardController.StartSwipe(direction);
 
@@ -170,9 +186,9 @@ public class GameManager : MonoBehaviour
 
     private void OnShowResultButtonClicked()
     {
-        CalculateAndShowRanking();
         rankingPanel.SetActive(true);
         roundEndPanel.SetActive(false);
+        StartCoroutine(AnimateRankingDisplay());
     }
 
     private void OnBackButtonClicked()
@@ -181,33 +197,55 @@ public class GameManager : MonoBehaviour
         roundEndPanel.SetActive(true);
     }
 
-    private void CalculateAndShowRanking()
+    private IEnumerator AnimateRankingDisplay()
     {
-        var sortedLikes = likeCounts.OrderByDescending(pair => pair.Value);
-
-        string rankingStr = "";
-        int rank = 1;
-        foreach (var pair in sortedLikes)
+        foreach (Transform child in entryContainer)
         {
-            rankingStr += $"{rank}位: {pair.Key} ({pair.Value} Likes)\n";
-            rank++;
-            if (rank > 5)
+            Destroy(child.gameObject);
+        }
+        yield return null;
+
+        // ★ 変更: 並び替えのルールを「いいね数」のみに簡略化
+        var sortedData = rankingData.Values
+            .OrderByDescending(data => data.LikeCount)
+            .ToList();
+
+        for (int i = 0; i < sortedData.Count && i < 5; i++)
+        {
+            GameObject entryGO = Instantiate(rankingEntryPrefab, entryContainer);
+
+            Text rankText = entryGO.transform.Find("RankText").GetComponent<Text>();
+            Image profileImage = entryGO.transform.Find("ProfileImage").GetComponent<Image>();
+            Text likeCountText = entryGO.transform.Find("LikeCountText").GetComponent<Text>();
+            Text nameText = entryGO.transform.Find("NameText").GetComponent<Text>();
+
+            rankText.text = $"{i + 1}位";
+            profileImage.sprite = cardSprites.Find(sprite => sprite.name == sortedData[i].ImageName);
+            likeCountText.text = $"{sortedData[i].LikeCount} Likes";
+            nameText.text = sortedData[i].ImageName;
+
+            RectTransform rectTransform = entryGO.GetComponent<RectTransform>();
+            Vector2 targetPosition = rectTransform.anchoredPosition;
+            Vector2 startPosition = targetPosition + new Vector2(Screen.width, 0);
+
+            float duration = 0.5f;
+            float timer = 0f;
+            while (timer < duration)
             {
-                break;
+                timer += Time.deltaTime;
+                float progress = Mathf.SmoothStep(0, 1, timer / duration);
+                rectTransform.anchoredPosition = Vector2.Lerp(startPosition, targetPosition, progress);
+                yield return null;
             }
-        }
+            rectTransform.anchoredPosition = targetPosition;
 
-        if (string.IsNullOrEmpty(rankingStr))
-        {
-            rankingStr = "画像がありません。";
+            yield return new WaitForSeconds(0.2f);
         }
-
-        rankingText.text = rankingStr;
     }
-    // 履歴を外部に公開（読み取り専用）
+
     public System.Collections.Generic.IReadOnlyList<SwipeRecord> GetSwipeHistory()
     {
-        return swipeHistory.AsReadOnly();  // List→ReadOnlyCollection にして返す
+        return swipeHistory.AsReadOnly();
     }
 
 }
