@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;              // LINQ (OrderBy, GroupBy 等)
+using System.Linq;              // LINQ
 using System.Globalization;     // CultureInfo
-using System.Text;
+using System.Text;              // StringBuilder
 using UnityEngine;
 using UnityEngine.UI;           // UI.Text
-using static System.Net.Mime.MediaTypeNames;
-
 
 public class Ranking : MonoBehaviour
 {
@@ -22,14 +20,15 @@ public class Ranking : MonoBehaviour
     private readonly Dictionary<int, float[]> resultsByCount = new Dictionary<int, float[]>();
 
     [Header("UI 表示")]
-    // フィールド宣言をこれに
-    [SerializeField] private UnityEngine.UI.Text outputText;
-
-    [SerializeField] private int maxLines = 10;   // 履歴の表示件数
+    [SerializeField] private UnityEngine.UI.Text outputText;  // Canvas の Text を割り当て
+    [SerializeField] private int maxLines = 10;               // 表示する件数
     [SerializeField] private bool showSwipeSummary = true;
 
     [Header("ログ設定")]
     [SerializeField] private bool logResultOnCall = true;
+
+    public enum SortMetric { SumAbs, Sum, Mean, Max, L2 }
+    [SerializeField] private SortMetric sortBy = SortMetric.SumAbs;
 
     private static readonly CultureInfo CI = CultureInfo.InvariantCulture;
 
@@ -105,13 +104,19 @@ public class Ranking : MonoBehaviour
         }
         sb.AppendLine();
 
-        // 履歴（新しい順に maxLines 件）
-        sb.AppendLine($"=== History (latest {Mathf.Min(maxLines, resultsByCount.Count)} entries) ===");
+        // 履歴（スコア降順で上位 maxLines 件）
+        sb.AppendLine($"=== History by {sortBy} (top {Mathf.Min(maxLines, resultsByCount.Count)}) ===");
         if (resultsByCount.Count > 0)
         {
-            foreach (var kv in resultsByCount.OrderByDescending(k => k.Key).Take(maxLines))
+            var byScore = resultsByCount
+                .Select(kv => new { Key = kv.Key, Values = kv.Value, Score = ComputeScore(kv.Value) })
+                .OrderByDescending(x => x.Score)
+                .ThenBy(x => x.Key)  // 同点の場合は count 昇順
+                .Take(maxLines);
+
+            foreach (var x in byScore)
             {
-                sb.AppendLine($"{kv.Key,4}: {FormatArray(kv.Value)}");
+                sb.AppendLine($"{x.Key,4}: score={x.Score.ToString("G4", CI)}  {FormatArray(x.Values)}");
             }
         }
         else
@@ -129,7 +134,8 @@ public class Ranking : MonoBehaviour
                 sb.AppendLine("=== Swipe Summary ===");
 
                 var stats = hist.GroupBy(r => r.ImageName)
-                                .Select(g => new {
+                                .Select(g => new
+                                {
                                     Name = g.Key,
                                     Likes = g.Count(x => x.Liked),
                                     Unlikes = g.Count(x => !x.Liked),
@@ -148,6 +154,34 @@ public class Ranking : MonoBehaviour
         }
 
         outputText.text = sb.ToString();
+    }
+
+    // 並べ替えスコア
+    private float ComputeScore(float[] arr)
+    {
+        if (arr == null || arr.Length == 0) return 0f;
+
+        switch (sortBy)
+        {
+            case SortMetric.Sum:
+                return arr.Sum();
+
+            case SortMetric.Mean:
+                return arr.Average();
+
+            case SortMetric.Max:
+                return arr.Max();
+
+            case SortMetric.L2:
+                double sum2 = 0;
+                for (int i = 0; i < arr.Length; i++)
+                    sum2 += (double)arr[i] * arr[i];
+                return (float)Math.Sqrt(sum2);
+
+            case SortMetric.SumAbs:
+            default:
+                return arr.Select(v => Mathf.Abs(v)).Sum();
+        }
     }
 
     private string FormatVector(string title, float[] arr)
