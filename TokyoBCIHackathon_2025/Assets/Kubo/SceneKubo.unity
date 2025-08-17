@@ -1576,7 +1576,22 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 691c9ab1e3796584493faee95f82ed23, type: 3}
   - {fileID: 21300000, guid: cf41e3b5a84a26b4eb78bcb6c3b0b27f, type: 3}
   - {fileID: 21300000, guid: b811bc510b015f34a93a56647fd037ff, type: 3}
+  - {fileID: 21300000, guid: 2ddd8a8d4a2547a418bdd4f9cd57d048, type: 3}
+  - {fileID: 21300000, guid: 0233fed9ef67e684c8f16bbdb680e7dc, type: 3}
+  - {fileID: 21300000, guid: 7133165f0c56fe142b832751588e5fb8, type: 3}
+  - {fileID: 21300000, guid: 3c2aa7cbabb600f4cab879fb172171be, type: 3}
+  - {fileID: 21300000, guid: b0a5081b093d05c438f6d9dd386a4397, type: 3}
+  - {fileID: 21300000, guid: 79b62269b2150c9459bdfed5a14cd4de, type: 3}
   - {fileID: 21300000, guid: 8f2dc27e76f4a77478c7f87a3a9ee914, type: 3}
+  - {fileID: 21300000, guid: 113c7a1ce65d28545807a41a8b43c6be, type: 3}
+  - {fileID: 21300000, guid: ae4a61ac1a691e74ca47d48f10cb628e, type: 3}
+  - {fileID: 21300000, guid: a7c00250e77cc1341894dae13130c3ac, type: 3}
+  - {fileID: 21300000, guid: e2042abec41cf6643b9ffe21ec00e828, type: 3}
+  - {fileID: 21300000, guid: 61ea1b1eaa2f61f4bb2a0ad561572f40, type: 3}
+  - {fileID: 21300000, guid: a51381bbdab01dc4a84db8130fc3257a, type: 3}
+  - {fileID: 21300000, guid: 20c1c2b3fa72559498dde4fbe93ab5c6, type: 3}
+  - {fileID: 21300000, guid: 2399a3187480fff4781007f7d148dd65, type: 3}
+  - {fileID: 21300000, guid: 385d46cb532f35e468f82677d8299b1e, type: 3}
   cardController: {fileID: 2139092313}
   likeButton: {fileID: 1116901371}
   ummButton: {fileID: 1495501604}
