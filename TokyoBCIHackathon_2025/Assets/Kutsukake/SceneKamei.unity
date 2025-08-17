@@ -298,6 +298,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   afc: {fileID: 543057983}
+  gameManager: {fileID: 708184821497217908}
   results:
   - 0
   - 0
@@ -306,7 +307,9 @@ MonoBehaviour:
   - 0
   - 0
   count: 0
-  gameManager: {fileID: 708184821497217908}
+  outputText: {fileID: 6503135552573132346}
+  maxLines: 10
+  showSwipeSummary: 1
   logResultOnCall: 1
 --- !u!4 &395149158
 Transform:
@@ -1516,6 +1519,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 395149157}
+        m_TargetAssemblyTypeName: Ranking, Assembly-CSharp
+        m_MethodName: Call_result
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!224 &1701715070017558554
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1833,6 +1848,18 @@ MonoBehaviour:
       - m_Target: {fileID: 543057981}
         m_TargetAssemblyTypeName: ZScoreProcessor, Assembly-CSharp
         m_MethodName: LoadAndComputeZScores
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 395149157}
+        m_TargetAssemblyTypeName: Ranking, Assembly-CSharp
+        m_MethodName: Call_result
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
