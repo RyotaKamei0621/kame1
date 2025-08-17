@@ -3,6 +3,21 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 using System.Linq;
 
+// ★ 追加: スワイプの情報をまとめて記録するためのクラス
+public class SwipeRecord
+{
+    public string ImageName;
+    public bool Liked;
+    public int AppearanceOrder; // 全体で何番目に表示されたか
+
+    public SwipeRecord(string name, bool liked, int order)
+    {
+        ImageName = name;
+        Liked = liked;
+        AppearanceOrder = order;
+    }
+}
+
 public class GameManager : MonoBehaviour
 {
     [Header("カード設定")]
@@ -27,6 +42,12 @@ public class GameManager : MonoBehaviour
     private List<int> shuffledIndices = new List<int>();
     private int currentIndexInShuffle = 0;
 
+    // ★ 追加: 全ての評価履歴を保存するリスト
+    private List<SwipeRecord> swipeHistory = new List<SwipeRecord>();
+    // ★ 追加: ラウンドをまたいでカウントし続ける、通算の表示順カウンター
+    private int overallAppearanceCount = 0;
+
+
     void Start()
     {
         likeButton.onClick.AddListener(OnLikeButtonClicked);
@@ -35,8 +56,6 @@ public class GameManager : MonoBehaviour
         showResultButton.onClick.AddListener(OnShowResultButtonClicked);
         backButton.onClick.AddListener(OnBackButtonClicked);
 
-        // ★ 変更点: 全ての画像のLikeカウントを0で初期化する
-        // これにより、一度もLikeされていない画像もランキングの対象になる
         foreach (var sprite in cardSprites)
         {
             if (!likeCounts.ContainsKey(sprite.name))
@@ -85,6 +104,9 @@ public class GameManager : MonoBehaviour
             return;
         }
 
+        // ★ 変更点: 新しいカードを表示する前に、通算カウンターを1増やす
+        overallAppearanceCount++;
+
         cardController.ResetCard();
         int cardIndex = shuffledIndices[currentIndexInShuffle];
         cardController.GetComponent<Image>().sprite = cardSprites[cardIndex];
@@ -111,10 +133,15 @@ public class GameManager : MonoBehaviour
 
         if (isLike)
         {
-            // ここは変更なし (初期化済みなので、キーが存在しないケースは考慮不要)
             likeCounts[imageName]++;
-            Debug.Log($"Like Count for {imageName}: {likeCounts[imageName]}");
         }
+
+        // ★ 変更点: 新しいSwipeRecordを作成して履歴リストに追加
+        var record = new SwipeRecord(imageName, isLike, overallAppearanceCount);
+        swipeHistory.Add(record);
+
+        // ★ 変更点: コンソールに表示する記録の内容をより詳細にする
+        Debug.Log($"記録 #{record.AppearanceOrder}: 「{record.ImageName}」を「{(record.Liked ? "Like" : "Unlike")}」しました。");
 
         cardController.StartSwipe(direction);
 
@@ -156,8 +183,6 @@ public class GameManager : MonoBehaviour
 
     private void CalculateAndShowRanking()
     {
-        // ★ 変更点: ロジック自体は変更不要だが、
-        // likeCountsに全画像のデータが入っているため、0点のものもソート対象になる
         var sortedLikes = likeCounts.OrderByDescending(pair => pair.Value);
 
         string rankingStr = "";
